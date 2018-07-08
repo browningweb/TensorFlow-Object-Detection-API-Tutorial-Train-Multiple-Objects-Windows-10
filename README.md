@@ -409,3 +409,33 @@ This error occurs when the filepaths in the training configuration file (faster_
 ```
 “C:/path/to/model.file”
 ```
+
+#### 5. Argument must be a dense tensor: range(0, 3) - got shape [3], but wanted [].
+[tensorflow/models#3752](https://github.com/tensorflow/models/issues/3752)
+I believe it is the same Python3 incompatibility that has crept up before (see #3443 ). The issue is with models/research/object_detection/utils/learning_schedules.py lines 167-169. Currently it is
+```
+rate_index = tf.reduce_max(tf.where(tf.greater_equal(global_step, boundaries),
+                                      range(num_boundaries),
+                                      [0] * num_boundaries))
+```
+Wrap list() around the range() like this:
+```
+rate_index = tf.reduce_max(tf.where(tf.greater_equal(global_step, boundaries),
+                                     list(range(num_boundaries)),
+                                      [0] * num_boundaries))
+```
+
+
+
+#### 6. ValueError: First step cannot be zero.
+[tensorflow/models#3794](https://github.com/tensorflow/models/issues/3794)
+We recently updated the code so this block
+```
+schedule {
+            step: 0
+            learning_rate: .0001
+          }
+```
+is not recognized anymore.
+
+The model configs in model zoo still have this block so it crashed the program. You can remove this block or use the latest config instead of the downloaded one in tar.gz file.
